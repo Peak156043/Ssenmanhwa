@@ -98,10 +98,11 @@ export function ChapterUploadForm({ manhwaId, manhwaSlug }: { manhwaId: string; 
       );
 
       // Get signed upload URLs from the server to bypass RLS issues on the client
+      const timestamp = Date.now();
       const paths = compressedPages.map((cp, i) => {
         const ext = cp.file.name.split('.').pop() || 'webp';
         const pageNumber = String(i + 1).padStart(3, '0');
-        return `${manhwaSlug}/ch${chapterNumber}/${pageNumber}.${ext}`;
+        return `${manhwaSlug}/ch${chapterNumber}/${pageNumber}-${timestamp}.${ext}`;
       });
 
       const { urls, error: signedUrlError } = await generateUploadUrlsAction(paths);
