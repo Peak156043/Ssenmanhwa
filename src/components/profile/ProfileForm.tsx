@@ -43,7 +43,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
 
     const formData = new FormData();
     try {
-      const compressedFile = await compressImageToWebP(file, 400); // 400px width for avatar
+      const compressedFile = await compressImageToWebP(file, { maxWidthOrHeight: 400 }); // 400px width for avatar
       formData.append('avatar', compressedFile);
     } catch (err) {
       console.error('Avatar compression error', err);
