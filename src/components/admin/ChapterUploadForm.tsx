@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { clsx } from 'clsx';
 import { createChapterAction, type ChapterFormState } from '@/lib/actions/chapters';
 import { compressImageToWebP } from '@/lib/utils/imageCompression';
+import { createClient } from '@/lib/supabase/client';
 
 interface PageFile {
   id: string;
@@ -85,28 +86,50 @@ export function ChapterUploadForm({ manhwaId, manhwaSlug }: { manhwaId: string; 
 
     try {
       const formData = new FormData(formRef.current);
+      const chapterNumber = String(formData.get('chapterNumber'));
       
-      // Compress all pages in parallel before appending to FormData
+      // Compress all pages in parallel before uploading
       const compressedPages = await Promise.all(
         pages.map(async (p) => {
-          // Do not restrict width/height for chapter pages to prevent destroying long strips
-          // Increase maxSizeMB to 2.5MB and quality to 90% to preserve text readability
-          const compressedFile = await compressImageToWebP(p.file, { maxSizeMB: 2.5, quality: 0.9 });
+          // Max 10MB per image, quality 90%, no dimension restrictions
+          const compressedFile = await compressImageToWebP(p.file, { maxSizeMB: 10, quality: 0.9 });
           return { originalName: p.file.name, file: compressedFile };
         })
       );
 
-      // Append in the exact order the admin arranged them
-      compressedPages.forEach((cp) => formData.append('pages', cp.file, cp.file.name));
+      // Upload directly to Supabase from the browser
+      const supabase = createClient();
+      const uploadedUrls: string[] = [];
+      
+      for (let i = 0; i < compressedPages.length; i++) {
+        const file = compressedPages[i].file;
+        const ext = file.name.split('.').pop() || 'webp';
+        const pageNumber = String(i + 1).padStart(3, '0');
+        const path = `${manhwaSlug}/ch${chapterNumber}/${pageNumber}.${ext}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('manhwa-pages')
+          .upload(path, file, { contentType: file.type, upsert: true });
+
+        if (uploadError) {
+          throw new Error(`อัปโหลดหน้า ${i + 1} ไม่สำเร็จ: ${uploadError.message}`);
+        }
+
+        const { data: publicUrl } = supabase.storage.from('manhwa-pages').getPublicUrl(path);
+        uploadedUrls.push(publicUrl.publicUrl);
+      }
+
+      // Append URLs to FormData for the Server Action
+      formData.append('pageUrls', JSON.stringify(uploadedUrls));
 
       startTransition(async () => {
         const result = await createChapterAction(manhwaId, manhwaSlug, state, formData);
         if (result?.error) setState(result);
         setIsCompressing(false);
       });
-    } catch (err) {
-      console.error('Compression error:', err);
-      setState({ error: 'เกิดข้อผิดพลาดขณะบีบอัดภาพ กรุณาลองใหม่' });
+    } catch (err: any) {
+      console.error('Upload error:', err);
+      setState({ error: err.message || 'เกิดข้อผิดพลาดขณะอัปโหลดภาพ กรุณาลองใหม่' });
       setIsCompressing(false);
     }
   }
@@ -240,7 +263,7 @@ export function ChapterUploadForm({ manhwaId, manhwaSlug }: { manhwaId: string; 
           ยกเลิก
         </Button>
         <Button type="submit" disabled={pending || isCompressing || pages.length === 0}>
-          {isCompressing ? 'กำลังบีบอัดภาพ...' : pending ? 'กำลังอัปโหลด...' : publishNow ? 'บันทึกและเผยแพร่' : 'บันทึกเป็น Draft'}
+          {isCompressing ? 'กำลังเตรียมไฟล์และอัปโหลด...' : pending ? 'กำลังบันทึกข้อมูล...' : publishNow ? 'บันทึกและเผยแพร่' : 'บันทึกเป็น Draft'}
         </Button>
       </div>
     </form>

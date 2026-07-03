@@ -21,7 +21,13 @@ export async function createChapterAction(
   const chapterNumber = Number(formData.get('chapterNumber'));
   const title = String(formData.get('title') ?? '').trim();
   const publishNow = formData.get('publishNow') === 'on';
-  const pageFiles = formData.getAll('pages') as File[];
+  const pageUrlsStr = formData.get('pageUrls') as string;
+  let uploadedUrls: string[] = [];
+  try {
+    if (pageUrlsStr) uploadedUrls = JSON.parse(pageUrlsStr);
+  } catch (e) {
+    // ignore
+  }
 
   if (!chapterNumber || Number.isNaN(chapterNumber)) {
     return { error: 'กรุณากรอกเลขตอนให้ถูกต้อง' };
@@ -29,35 +35,8 @@ export async function createChapterAction(
   if (!title) {
     return { error: 'กรุณากรอกชื่อตอน' };
   }
-  if (pageFiles.length === 0 || pageFiles.every((f) => f.size === 0)) {
+  if (uploadedUrls.length === 0) {
     return { error: 'กรุณาอัปโหลดรูปภาพอย่างน้อย 1 หน้า' };
-  }
-
-  // Files arrive in the order the client already sorted/reordered them
-  // (FormData preserves append order), so the upload index here IS the
-  // final page order — no separate "order" field needed.
-  const uploadedUrls: string[] = [];
-  for (let i = 0; i < pageFiles.length; i++) {
-    const file = pageFiles[i];
-    if (file.size === 0) continue;
-    if (file.size > 10 * 1024 * 1024) {
-      return { error: `ไฟล์ ${file.name} มีขนาดเกิน 10MB` };
-    }
-
-    const ext = file.name.split('.').pop();
-    const pageNumber = String(i + 1).padStart(3, '0');
-    const path = `${manhwaSlug}/ch${chapterNumber}/${pageNumber}.${ext}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('manhwa-pages')
-      .upload(path, file, { contentType: file.type, upsert: true });
-
-    if (uploadError) {
-      return { error: `อัปโหลดหน้า ${i + 1} ไม่สำเร็จ: ${uploadError.message}` };
-    }
-
-    const { data: publicUrl } = supabase.storage.from('manhwa-pages').getPublicUrl(path);
-    uploadedUrls.push(publicUrl.publicUrl);
   }
 
   const { error: insertError } = await (supabase as any).from('chapters').insert({
