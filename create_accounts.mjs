@@ -6,10 +6,10 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const accounts = [
-  { username: 'Developer', email: 'developer@example.com', password: '12345678', role: 'developer' },
-  { username: 'Super Admin', email: 'superadmin@example.com', password: '12345678', role: 'superadmin' },
-  { username: 'Admin', email: 'admin@example.com', password: '12345678', role: 'admin' },
-  { username: 'User01', email: 'user01@example.com', password: '12345678', role: null }, // user account
+  { username: 'devewloper', email: 'developer@example.com', password: '12345678', role: 'developer' },
+  { username: 'superadmin', email: 'superadmin@example.com', password: '12345678', role: 'superadmin' },
+  { username: 'admin', email: 'admin@example.com', password: '12345678', role: 'admin' },
+  { username: 'user01', email: 'user01@example.com', password: '12345678', role: null }, // user account
 ];
 
 async function setupAccount(acc) {

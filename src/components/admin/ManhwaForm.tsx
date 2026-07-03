@@ -15,6 +15,7 @@ import {
 } from '@/lib/actions/manhwa';
 import { clsx } from 'clsx';
 import { compressImageToWebP } from '@/lib/utils/imageCompression';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 
 interface ManhwaFormProps {
   initial?: Partial<Manhwa> & { id?: string };
@@ -39,6 +40,7 @@ export function ManhwaForm({ initial, mode, genres, chapters = [] }: ManhwaFormP
   );
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const boundAction =
     mode === 'create'
@@ -97,9 +99,13 @@ export function ManhwaForm({ initial, mode, genres, chapters = [] }: ManhwaFormP
     setIsDirty(true);
   }
 
-  async function handleDelete() {
+  function handleDelete() {
     if (!initial?.id) return;
-    if (!confirm(`ลบ "${initial.title}" ใช่หรือไม่? การลบจะลบตอนทั้งหมดของเรื่องนี้ด้วย`)) return;
+    setDeleteModalOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!initial?.id) return;
     setDeleting(true);
     setDeleteError(null);
     const result = await deleteManhwaAction(initial.id);
@@ -107,11 +113,22 @@ export function ManhwaForm({ initial, mode, genres, chapters = [] }: ManhwaFormP
       setDeleteError(result.error);
       setDeleting(false);
     }
+    setDeleteModalOpen(false);
     // on success, deleteManhwaAction redirects server-side
   }
 
   return (
-    <form action={handleAction} onChange={() => setIsDirty(true)} className="space-y-6">
+    <>
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        title="ยืนยันการลบมังฮวา"
+        description={`คุณแน่ใจหรือไม่ที่จะลบเรื่อง "${initial?.title}"?\nการลบนี้จะลบตอนทั้งหมดและไม่สามารถกู้คืนได้`}
+        confirmText="ลบถาวร"
+        isLoading={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteModalOpen(false)}
+      />
+      <form action={handleAction} onChange={() => setIsDirty(true)} className="space-y-6">
       <input type="hidden" name="chapterStatuses" value={JSON.stringify(chapterStatuses)} />
       {state.error && (
         <p className="rounded border border-danger-500/40 bg-danger-500/10 px-3 py-2 text-sm text-danger-400">
@@ -270,5 +287,6 @@ export function ManhwaForm({ initial, mode, genres, chapters = [] }: ManhwaFormP
         </div>
       </div>
     </form>
+    </>
   );
 }

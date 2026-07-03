@@ -5,6 +5,7 @@ import { Genre } from '@/types';
 import { Plus, Pencil, Trash2, X, Check } from 'lucide-react';
 import { createGenreAction, updateGenreAction, deleteGenreAction } from '@/lib/actions/genres';
 import { Button } from '@/components/ui/Button';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 
 interface GenreManagerProps {
   initialGenres: Genre[];
@@ -21,6 +22,8 @@ export function GenreManager({ initialGenres }: GenreManagerProps) {
   const [newSlug, setNewSlug] = useState('');
   
   const [errorMsg, setErrorMsg] = useState('');
+  
+  const [modalState, setModalState] = useState<{ isOpen: boolean; targetId: string | null; targetName: string }>({ isOpen: false, targetId: null, targetName: '' });
 
   const handleCreate = async () => {
     if (!newName) return;
@@ -58,15 +61,20 @@ export function GenreManager({ initialGenres }: GenreManagerProps) {
     });
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`คุณแน่ใจหรือไม่ที่จะลบแท็ก "${name}"?\nมังฮวาที่มีแท็กนี้จะถูกนำแท็กออกโดยอัตโนมัติ`)) return;
+  const handleDelete = (id: string, name: string) => {
+    setModalState({ isOpen: true, targetId: id, targetName: name });
+  };
+
+  const confirmDelete = async () => {
+    if (!modalState.targetId) return;
     
     setErrorMsg('');
     startTransition(async () => {
-      const { error } = await deleteGenreAction(id);
+      const { error } = await deleteGenreAction(modalState.targetId!);
       if (error) {
         setErrorMsg(error);
       }
+      setModalState({ isOpen: false, targetId: null, targetName: '' });
     });
   };
 
@@ -78,6 +86,15 @@ export function GenreManager({ initialGenres }: GenreManagerProps) {
 
   return (
     <div className="space-y-4">
+      <ConfirmModal
+        isOpen={modalState.isOpen}
+        title="ยืนยันการลบแท็ก"
+        description={`คุณแน่ใจหรือไม่ที่จะลบแท็ก "${modalState.targetName}"?\nมังฮวาที่มีแท็กนี้จะถูกนำแท็กออกโดยอัตโนมัติ`}
+        confirmText="ลบถาวร"
+        isLoading={isPending}
+        onConfirm={confirmDelete}
+        onCancel={() => setModalState({ isOpen: false, targetId: null, targetName: '' })}
+      />
       {errorMsg && (
         <div className="rounded bg-danger-500/10 p-3 text-sm text-danger-400">
           {errorMsg}
