@@ -6,7 +6,7 @@ import { useState, useRef, useTransition } from 'react';
 import { UploadCloud, GripVertical, X, ArrowDownAZ } from 'lucide-react';
 import Image from 'next/image';
 import { clsx } from 'clsx';
-import { createChapterAction, type ChapterFormState } from '@/lib/actions/chapters';
+import { createChapterAction, generateUploadUrlsAction, type ChapterFormState } from '@/lib/actions/chapters';
 import { compressImageToWebP } from '@/lib/utils/imageCompression';
 import { createClient } from '@/lib/supabase/client';
 
@@ -97,19 +97,29 @@ export function ChapterUploadForm({ manhwaId, manhwaSlug }: { manhwaId: string; 
         })
       );
 
-      // Upload directly to Supabase from the browser
+      // Get signed upload URLs from the server to bypass RLS issues on the client
+      const paths = compressedPages.map((cp, i) => {
+        const ext = cp.file.name.split('.').pop() || 'webp';
+        const pageNumber = String(i + 1).padStart(3, '0');
+        return `${manhwaSlug}/ch${chapterNumber}/${pageNumber}.${ext}`;
+      });
+
+      const { urls, error: signedUrlError } = await generateUploadUrlsAction(paths);
+      if (signedUrlError || !urls) {
+        throw new Error(signedUrlError || 'ไม่สามารถสร้างลิงก์อัปโหลดได้');
+      }
+
+      // Upload directly to Supabase using the signed URLs
       const supabase = createClient();
       const uploadedUrls: string[] = [];
       
       for (let i = 0; i < compressedPages.length; i++) {
         const file = compressedPages[i].file;
-        const ext = file.name.split('.').pop() || 'webp';
-        const pageNumber = String(i + 1).padStart(3, '0');
-        const path = `${manhwaSlug}/ch${chapterNumber}/${pageNumber}.${ext}`;
+        const { path, token } = urls[i];
         
         const { error: uploadError } = await supabase.storage
           .from('manhwa-pages')
-          .upload(path, file, { contentType: file.type, upsert: true });
+          .uploadToSignedUrl(path, token, file);
 
         if (uploadError) {
           throw new Error(`อัปโหลดหน้า ${i + 1} ไม่สำเร็จ: ${uploadError.message}`);

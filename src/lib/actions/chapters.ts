@@ -9,6 +9,19 @@ export interface ChapterFormState {
   error: string | null;
 }
 
+export async function generateUploadUrlsAction(paths: string[]) {
+  await requireAdmin();
+  const supabase = await createClient();
+  
+  const results = [];
+  for (const path of paths) {
+    const { data, error } = await supabase.storage.from('manhwa-pages').createSignedUploadUrl(path);
+    if (error) return { error: error.message };
+    if (data) results.push({ path, token: data.token });
+  }
+  return { urls: results };
+}
+
 export async function createChapterAction(
   manhwaId: string,
   manhwaSlug: string,
