@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ink-950: #0a0b0e;
+  --ink-900: #0e0f13;
+  --ink-800: #15171d;
+  --ink-700: #1d2027;
+  --ink-600: #272b34;
+  --ink-500: #3a3f4b;
+  --paper-100: #f5f4f2;
+  --paper-200: #ededed;
+  --paper-300: #c9c9cf;
+  --paper-400: #9a9aa5;
+  --paper-500: #6b7280;
+  color-scheme: dark;
+}
+
+:root.light {
+  --ink-950: #ffffff;
+  --ink-900: #f9fafb;
+  --ink-800: #f3f4f6;
+  --ink-700: #e5e7eb;
+  --ink-600: #d1d5db;
+  --ink-500: #9ca3af;
+  --paper-100: #111827;
+  --paper-200: #1f2937;
+  --paper-300: #374151;
+  --paper-400: #4b5563;
+  --paper-500: #6b7280;
+  color-scheme: light;
+}
+
+* {
+  scrollbar-color: var(--ink-500) var(--ink-900);
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html,
+body {
+  background-color: var(--ink-900);
+  color: var(--paper-200);
+  overflow-x: hidden;
+}
+
+/* Prevent images from overflowing on mobile */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+@layer base {
+  *:focus-visible {
+    outline: 2px solid #7c5cff;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* The signature element: a thin progress rail baked into poster cards. */
+  .progress-rail {
+    position: relative;
+    height: 3px;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+  }
+  .progress-rail-fill {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, #7c5cff, #9b82ff);
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

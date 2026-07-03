@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+.env
+.env.local
+*.log
+.DS_Store
+
+# Supabase CLI local state (Docker volumes, generated certs) — never the
+# migrations/config.toml/seed.sql, which stay tracked.
+supabase/.branches
+supabase/.temp

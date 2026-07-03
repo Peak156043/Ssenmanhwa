@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/aggregate-views",
+      "schedule": "0 0,12 * * *"
+    }
+  ]
+}
