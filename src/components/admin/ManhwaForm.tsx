@@ -56,7 +56,7 @@ export function ManhwaForm({ initial, mode, genres, chapters = [] }: ManhwaFormP
     if (coverFile && coverFile.size > 0 && coverFile.name) {
       setIsCompressing(true);
       try {
-        const compressed = await compressImageToWebP(coverFile, 800); // 800px width for cover is plenty
+        const compressed = await compressImageToWebP(coverFile, { maxWidthOrHeight: 800 }); // 800px width for cover is plenty
         formData.set('cover', compressed);
       } catch (err) {
         console.error('Cover compression failed:', err);

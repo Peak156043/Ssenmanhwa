@@ -89,7 +89,9 @@ export function ChapterUploadForm({ manhwaId, manhwaSlug }: { manhwaId: string; 
       // Compress all pages in parallel before appending to FormData
       const compressedPages = await Promise.all(
         pages.map(async (p) => {
-          const compressedFile = await compressImageToWebP(p.file, 1080); // Max width 1080px
+          // Do not restrict width/height for chapter pages to prevent destroying long strips
+          // Increase maxSizeMB to 2.5MB and quality to 90% to preserve text readability
+          const compressedFile = await compressImageToWebP(p.file, { maxSizeMB: 2.5, quality: 0.9 });
           return { originalName: p.file.name, file: compressedFile };
         })
       );
