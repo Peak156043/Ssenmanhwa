@@ -13,6 +13,7 @@ import {
   deleteManhwaAction,
   type ManhwaFormState,
 } from '@/lib/actions/manhwa';
+import { deleteChapterAction } from '@/lib/actions/chapters';
 import { clsx } from 'clsx';
 import { compressImageToWebP } from '@/lib/utils/imageCompression';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
@@ -41,6 +42,9 @@ export function ManhwaForm({ initial, mode, genres, chapters = [] }: ManhwaFormP
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+
+  const [deleteChapterTarget, setDeleteChapterTarget] = useState<{ id: string, title: string } | null>(null);
+  const [isDeletingChapter, setIsDeletingChapter] = useState(false);
 
   const boundAction =
     mode === 'create'
@@ -117,6 +121,17 @@ export function ManhwaForm({ initial, mode, genres, chapters = [] }: ManhwaFormP
     // on success, deleteManhwaAction redirects server-side
   }
 
+  async function confirmDeleteChapter() {
+    if (!deleteChapterTarget || !initial?.slug) return;
+    setIsDeletingChapter(true);
+    const result = await deleteChapterAction(deleteChapterTarget.id, initial.slug);
+    if (result?.error) {
+      alert(result.error);
+    }
+    setIsDeletingChapter(false);
+    setDeleteChapterTarget(null);
+  }
+
   return (
     <>
       <ConfirmModal
@@ -127,6 +142,15 @@ export function ManhwaForm({ initial, mode, genres, chapters = [] }: ManhwaFormP
         isLoading={deleting}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteModalOpen(false)}
+      />
+      <ConfirmModal
+        isOpen={!!deleteChapterTarget}
+        title="ยืนยันการลบตอน"
+        description={`คุณแน่ใจหรือไม่ที่จะลบตอน "${deleteChapterTarget?.title}"?\nการลบนี้จะไม่สามารถกู้คืนได้`}
+        confirmText="ลบถาวร"
+        isLoading={isDeletingChapter}
+        onConfirm={confirmDeleteChapter}
+        onCancel={() => setDeleteChapterTarget(null)}
       />
       <form action={handleAction} onChange={() => setIsDirty(true)} className="space-y-6">
       <input type="hidden" name="chapterStatuses" value={JSON.stringify(chapterStatuses)} />
@@ -252,7 +276,14 @@ export function ManhwaForm({ initial, mode, genres, chapters = [] }: ManhwaFormP
                     >
                       {currentStatus === 'draft' ? 'ฉบับร่าง' : 'เผยแพร่'}
                     </button>
-                    {/* เราไม่แสดงปุ่มลบในหน้านี้แล้ว เพื่อป้องกันความสับสน การลบจะทำได้ในหน้าแก้ไขตอน */}
+                    <button
+                      type="button"
+                      onClick={() => setDeleteChapterTarget({ id: c.id, title: c.title })}
+                      className="rounded p-1 text-paper-500 hover:bg-danger-500/10 hover:text-danger-400 transition-colors"
+                      aria-label="ลบตอนนี้"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 </div>
               );
